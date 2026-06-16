@@ -5,7 +5,7 @@ import random
 from ultralytics import YOLO
 import yaml
 
-@PipelineDecorator.component(execution_queue = "my_laptop-cpu_tasks", return_values=["path"], cache=True)
+@PipelineDecorator.component(execution_queue = "my_laptop-cpu-tasks",  return_values=["path"], cache=True)
 def health_check(dataset_id: str):
     passed = False
     dataset = Dataset.get(dataset_id = dataset_id)
@@ -41,7 +41,7 @@ def health_check(dataset_id: str):
     return passed
 
 
-@PipelineDecorator.component(execution_queue = "my_laptop-cpu_tasks", return_values=["path"], cache=True)
+@PipelineDecorator.component(execution_queue = "my_laptop-cpu-tasks", return_values=["path"], cache=True)
 def prepare_dataset(dataset_id: str, passed: bool, val_ratio: float):
     dataset = Dataset.get(dataset_id=dataset_id)
     path = Path(dataset.get_local_copy())
@@ -121,7 +121,7 @@ def prepare_dataset(dataset_id: str, passed: bool, val_ratio: float):
     
     return str(prepared_dataset.id)
 
-@PipelineDecorator.component(execution_queue = "my_laptop-gpu_tasks", return_values=["model_id"], cache=False)
+@PipelineDecorator.component(execution_queue = "my_laptop-gpu-tasks", return_values=["model_id"], cache=False)
 def train_model(prepared_dataset_id: str, 
     epochs,
     imgsz,
@@ -169,7 +169,7 @@ def train_model(prepared_dataset_id: str,
 
     return str(output_model.id)
 
-@PipelineDecorator.component(execution_queue = "my_laptop-cpu_tasks", return_values=["onnx_file"], cache=False)
+@PipelineDecorator.component(execution_queue = "my_laptop-cpu-tasks", return_values=["onnx_file"], cache=False)
 def export_model(output_model_id: str):
 
     pt_model = Model(model_id=output_model_id)
