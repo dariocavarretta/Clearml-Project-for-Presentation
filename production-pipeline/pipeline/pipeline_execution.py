@@ -26,7 +26,6 @@ def pipeline(
 
     execute_pipeline(**locals())
 
-    
 if __name__ == "__main__":
     
     pipeline(
