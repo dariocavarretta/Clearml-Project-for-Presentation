@@ -31,9 +31,9 @@ if __name__ == "__main__":
     pipeline(
         dataset_id="0547be16a7fb47788921023f645f94d4",
         val_ratio=0.2,
-        epochs = 8,
+        epochs = 50,
         imgsz=1024,
-        optimizer = "AdamW",
+        optimizer = "SGD",
         lr0 = 0.01,
         mosaic = 1.0,
         close_mosaic = 1,

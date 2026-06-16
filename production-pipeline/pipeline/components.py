@@ -2,8 +2,6 @@ from clearml import PipelineDecorator, Dataset, Task, OutputModel, Model
 from pathlib import Path
 import shutil
 import random
-from ultralytics import YOLO
-import yaml
 
 @PipelineDecorator.component(execution_queue = "my_laptop-cpu-tasks",  return_values=["passed"], cache=True)
 def health_check(dataset_id: str):
@@ -43,6 +41,8 @@ def health_check(dataset_id: str):
 
 @PipelineDecorator.component(execution_queue = "my_laptop-cpu-tasks", return_values=["prepared_dataset_id"], cache=True)
 def prepare_dataset(dataset_id: str, passed: bool, val_ratio: float):
+    import yaml
+
     dataset = Dataset.get(dataset_id=dataset_id)
     path = Path(dataset.get_local_copy())
     images_dir = path / "images"
@@ -137,14 +137,10 @@ def train_model(prepared_dataset_id: str,
     device,
     weights):
 
+    from ultralytics import YOLO
+
     prepared_dataset = Dataset.get(dataset_id = prepared_dataset_id)
     path = prepared_dataset.get_local_copy()
-
-    import torch
-
-    print(torch.__version__)
-    print(torch.version.cuda)
-    print(torch.backends.cudnn.version())
 
     data_yaml = Path(path) / "dataset.yaml"
     model = YOLO(weights)
@@ -180,6 +176,8 @@ def train_model(prepared_dataset_id: str,
 
 @PipelineDecorator.component(execution_queue = "my_laptop-cpu-tasks", return_values=["onnx_file"], cache=False)
 def export_model(output_model_id: str):
+    
+    from ultralytics import YOLO
 
     pt_model = Model(model_id=output_model_id)
 
