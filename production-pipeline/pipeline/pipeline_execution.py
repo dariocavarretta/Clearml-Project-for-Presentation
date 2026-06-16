@@ -29,7 +29,7 @@ def pipeline(
 if __name__ == "__main__":
     PipelineDecorator.set_default_execution_queue("my_laptop-cpu-tasks")
     pipeline(
-        dataset_id="45db8725246e417d8714622b54edd57a",
+        dataset_id="0547be16a7fb47788921023f645f94d4",
         val_ratio=0.2,
         epochs = 8,
         imgsz=1024,
