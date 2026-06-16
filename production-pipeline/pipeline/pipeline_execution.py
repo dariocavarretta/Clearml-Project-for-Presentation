@@ -6,6 +6,7 @@ from components import execute_pipeline
     name="Yolov11-Bottles Detection",
     project="Bottles-Detection",
     version="0.1",
+    pipeline_execution_queue="my_laptop-cpu-tasks"
 )
 def pipeline(
     dataset_id,
@@ -27,7 +28,7 @@ def pipeline(
 
     
 if __name__ == "__main__":
-    PipelineDecorator.set_default_execution_queue("my_laptop-cpu-tasks")
+    
     pipeline(
         dataset_id="0547be16a7fb47788921023f645f94d4",
         val_ratio=0.2,
