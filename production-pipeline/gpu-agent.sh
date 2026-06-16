@@ -3,4 +3,5 @@ export CLEARML_AGENT_EXTRA_DOCKER_ARGS="--shm-size=6g"
 
 clearml-agent daemon \
     --queue my_laptop-gpu-tasks \
-    --docker bottles-pipeline:latest 
+    --docker bottles-pipeline:latest \
+    --gpus all
