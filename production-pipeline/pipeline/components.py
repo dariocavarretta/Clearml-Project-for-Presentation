@@ -112,9 +112,10 @@ def prepare_dataset(dataset_id: str, passed: bool, val_ratio: float):
     data["train"] = "images/train"
     data["val"] = "images/val"
 
+    print(yaml.safe_dump(data, sort_keys=False))
+
     with open(yaml_path, "w") as f:
         yaml.safe_dump(data, f, sort_keys=False)
-        print(f.read())
 
     prepared_dataset.add_files(path)
     prepared_dataset.upload()
