@@ -5,7 +5,7 @@ import random
 from ultralytics import YOLO
 import yaml
 
-@PipelineDecorator.component(execution_queue = "my_laptop-cpu-tasks",  return_values=["path"], cache=True)
+@PipelineDecorator.component(execution_queue = "my_laptop-cpu-tasks",  return_values=["passed"], cache=True)
 def health_check(dataset_id: str):
     passed = False
     dataset = Dataset.get(dataset_id = dataset_id)
@@ -41,7 +41,7 @@ def health_check(dataset_id: str):
     return passed
 
 
-@PipelineDecorator.component(execution_queue = "my_laptop-cpu-tasks", return_values=["path"], cache=True)
+@PipelineDecorator.component(execution_queue = "my_laptop-cpu-tasks", return_values=["prepared_dataset_id"], cache=True)
 def prepare_dataset(dataset_id: str, passed: bool, val_ratio: float):
     dataset = Dataset.get(dataset_id=dataset_id)
     path = Path(dataset.get_local_copy())
@@ -108,12 +108,13 @@ def prepare_dataset(dataset_id: str, passed: bool, val_ratio: float):
     with open(yaml_path, "r") as f:
         data = yaml.safe_load(f)
 
-    data["path"] = "."
+    data["path"] = str(path)
     data["train"] = "images/train"
     data["val"] = "images/val"
 
     with open(yaml_path, "w") as f:
         yaml.safe_dump(data, f, sort_keys=False)
+        print(f.read())
 
     prepared_dataset.add_files(path)
     prepared_dataset.upload()
