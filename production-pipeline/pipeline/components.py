@@ -140,6 +140,12 @@ def train_model(prepared_dataset_id: str,
     prepared_dataset = Dataset.get(dataset_id = prepared_dataset_id)
     path = prepared_dataset.get_local_copy()
 
+    import torch
+
+    print(torch.__version__)
+    print(torch.version.cuda)
+    print(torch.backends.cudnn.version())
+
     data_yaml = Path(path) / "dataset.yaml"
     model = YOLO(weights)
 
