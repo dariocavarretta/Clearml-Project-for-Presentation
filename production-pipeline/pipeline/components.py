@@ -154,7 +154,9 @@ def train_model(prepared_dataset_id: str,
         translate=translate,
         optimizer=optimizer,
         device=device,
-        workers = workers
+        workers = workers,
+            amp=False,
+
     )
     best_model = Path(results.save_dir) / "weights" / "best.pt"
 
