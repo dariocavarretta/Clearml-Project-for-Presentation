@@ -108,7 +108,7 @@ def prepare_dataset(dataset_id: str, passed: bool, val_ratio: float):
     with open(yaml_path, "r") as f:
         data = yaml.safe_load(f)
 
-    data["path"] = str(path)
+    data["path"] = "."
     data["train"] = "images/train"
     data["val"] = "images/val"
 
