@@ -5,3 +5,4 @@ runs
 clearml-serving
 yolov11n.pt
 yolov1126n.pt
+__pycache__

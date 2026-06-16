@@ -6,7 +6,7 @@ from components import execute_pipeline
     name="Yolov11-Bottles Detection",
     project="Bottles-Detection",
     version="0.1",
-    pipeline_execution_queue="my_laptop-cpu-tasks"
+    pipeline_execution_queue="pipeline-controller"
 )
 def pipeline(
     dataset_id,
