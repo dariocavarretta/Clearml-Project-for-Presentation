@@ -1,10 +1,11 @@
 from clearml import PipelineDecorator
-from src.my_clearml.config import repo, working_dir, cpu_queue, gpu_queue
+from src.my_clearml.config import repo, repo_branch, working_dir, cpu_queue, gpu_queue
 
 @PipelineDecorator.component(
     execution_queue = cpu_queue,  
     return_values=["passed"], 
     repo = repo,
+    repo_branch = repo_branch,
     working_dir = working_dir,
     cache=True)
 def health_check(dataset_id: str)-> bool:
@@ -19,6 +20,7 @@ def health_check(dataset_id: str)-> bool:
     execution_queue = cpu_queue, 
     return_values=["prepared_dataset_id"], 
     repo = repo,
+    repo_branch = repo_branch,
     working_dir = working_dir,
     cache=True)
 def prepare_dataset(dataset_id: str, passed: bool, val_ratio: float) -> str:
@@ -32,6 +34,7 @@ def prepare_dataset(dataset_id: str, passed: bool, val_ratio: float) -> str:
     execution_queue = gpu_queue, 
     return_values=["model_id"], 
     repo = repo,
+    repo_branch = repo_branch,
     working_dir = working_dir,
     cache=False)
 def train_model(prepared_dataset_id: str, 
@@ -70,6 +73,7 @@ def train_model(prepared_dataset_id: str,
     execution_queue = cpu_queue, 
     return_values=["onnx_file"], 
     repo = repo,
+    repo_branch = repo_branch,
     working_dir = working_dir,
     cache=False)
 def export_model(output_model_id: str)-> str:
