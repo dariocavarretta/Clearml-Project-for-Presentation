@@ -1,3 +1,4 @@
-downloaded_data
-yolov5
 venv
+.venv
+TACO-*
+runs

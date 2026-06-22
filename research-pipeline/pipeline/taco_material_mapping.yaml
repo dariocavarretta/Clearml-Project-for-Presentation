@@ -1,0 +1,65 @@
+# Material-based class mapping for TACO dataset
+# Maps original class ID (0-59) to material group
+
+# Format: old_class_id: new_class_name
+
+0: Metal        # Aluminium foil
+1: Other        # Battery
+2: Metal        # Aluminium blister pack
+3: Other        # Carded blister pack
+4: Plastic      # Other plastic bottle
+5: Plastic      # Clear plastic bottle
+6: Glass        # Glass bottle
+7: Plastic      # Plastic bottle cap
+8: Metal        # Metal bottle cap
+9: Glass        # Broken glass
+10: Metal       # Food Can
+11: Metal       # Aerosol
+12: Metal       # Drink can
+13: Paper       # Toilet tube
+14: Paper       # Other carton
+15: Paper       # Egg carton
+16: Paper       # Drink carton
+17: Paper       # Corrugated carton
+18: Paper       # Meal carton
+19: Paper       # Pizza box
+20: Paper       # Paper cup
+21: Plastic     # Disposable plastic cup
+22: Plastic     # Foam cup
+23: Glass       # Glass cup
+24: Plastic     # Other plastic cup
+25: Food        # Food waste
+26: Glass       # Glass jar
+27: Plastic     # Plastic lid
+28: Metal       # Metal lid
+29: Plastic     # Other plastic
+30: Paper       # Magazine paper
+31: Paper       # Tissues
+32: Paper       # Wrapping paper
+33: Paper       # Normal paper
+34: Paper       # Paper bag
+35: Paper       # Plastified paper bag
+36: Plastic     # Plastic film
+37: Plastic     # Six pack rings
+38: Plastic     # Garbage bag
+39: Plastic     # Other plastic wrapper
+40: Plastic     # Single-use carrier bag
+41: Plastic     # Polypropylene bag
+42: Plastic     # Crisp packet
+43: Plastic     # Spread tub
+44: Plastic     # Tupperware
+45: Plastic     # Disposable food container
+46: Plastic     # Foam food container
+47: Plastic     # Other plastic container
+48: Plastic     # Plastic glooves
+49: Plastic     # Plastic utensils
+50: Metal       # Pop tab
+51: Fabric      # Rope & strings
+52: Metal       # Scrap metal
+53: Fabric      # Shoe
+54: Plastic     # Squeezable tube
+55: Plastic     # Plastic straw
+56: Paper       # Paper straw
+57: Plastic     # Styrofoam piece
+58: Other       # Unlabeled litter
+59: Other       # Cigarette
