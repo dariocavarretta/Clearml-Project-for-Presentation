@@ -1,4 +1,4 @@
-repo = "git@github.com:dariocavarretta/Clearml-Project-for-Presentation.git"
+repo = "https://github.com/dariocavarretta/Clearml-Project-for-Presentation.git"
 repo_branch = "main"
 working_dir = "production-pipeline/pipeline/src"
 
