@@ -1,5 +1,5 @@
 from clearml import PipelineDecorator
-from config import repo, working_dir, cpu_queue, gpu_queue
+from src.my_clearml.config import repo, working_dir, cpu_queue, gpu_queue
 
 @PipelineDecorator.component(
     execution_queue = cpu_queue,  
