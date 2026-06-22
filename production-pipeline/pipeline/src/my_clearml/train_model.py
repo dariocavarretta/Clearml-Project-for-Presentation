@@ -45,7 +45,8 @@ def main(prepared_dataset_id: str,
     )
 
     output_model.update_weights(
-        weights_filename=str(best_model)
+        weights_filename=str(best_model),
+        upload_uri = "s3://8b56346322f98ed029a3c888fba38a69.r2.cloudflarestorage.com:443/ml-storage/models/"
     )
 
     return str(output_model.id)

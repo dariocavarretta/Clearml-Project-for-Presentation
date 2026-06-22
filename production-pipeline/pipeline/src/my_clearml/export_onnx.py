@@ -19,7 +19,8 @@ def main(output_model_id: str):
     )
 
     onnx_model.update_weights(
-        weights_filename=str(onnx_path)
+        weights_filename=str(onnx_path),
+        upload_uri="s3://8b56346322f98ed029a3c888fba38a69.r2.cloudflarestorage.com:443/ml-storage/models/"
     )
 
     return onnx_model.id
