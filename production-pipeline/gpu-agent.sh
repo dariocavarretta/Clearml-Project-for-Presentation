@@ -1,4 +1,5 @@
 export CLEARML_AGENT_SKIP_PIP_VENV_INSTALL=1
+export CLEARML_AGENT_SKIP_PYTHON_ENV_INSTALL=1
 export CLEARML_AGENT_EXTRA_DOCKER_ARGS="--shm-size=6g"
 
 clearml-agent daemon \

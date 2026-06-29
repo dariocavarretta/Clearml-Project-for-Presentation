@@ -1,4 +1,8 @@
-from clearml import PipelineDecorator 
+from clearml import PipelineDecorator
+import sys
+import os
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 from components import execute_pipeline
 
