@@ -2,26 +2,28 @@ from clearml import PipelineDecorator
 from src.my_clearml.config import repo, repo_branch, working_dir, cpu_queue, gpu_queue
 
 @PipelineDecorator.component(
-    execution_queue = cpu_queue,  
-    return_values=["passed"], 
+    execution_queue = cpu_queue,
+    return_values=["passed"],
     repo = repo,
     repo_branch = repo_branch,
     working_dir = working_dir,
+    packages=["boto3==1.43.29"],
     cache=True)
 def health_check(dataset_id: str)-> bool:
 
     from my_clearml.health_check import main as check_main
     passed = check_main(dataset_id)
-    
+
     return passed
 
 
 @PipelineDecorator.component(
-    execution_queue = cpu_queue, 
-    return_values=["prepared_dataset_id"], 
+    execution_queue = cpu_queue,
+    return_values=["prepared_dataset_id"],
     repo = repo,
     repo_branch = repo_branch,
     working_dir = working_dir,
+    packages=["boto3==1.43.29"],
     cache=True)
 def prepare_dataset(dataset_id: str, passed: bool, val_ratio: float) -> str:
 
@@ -31,13 +33,14 @@ def prepare_dataset(dataset_id: str, passed: bool, val_ratio: float) -> str:
     return str(prepared_dataset_id)
 
 @PipelineDecorator.component(
-    execution_queue = gpu_queue, 
-    return_values=["model_id"], 
+    execution_queue = gpu_queue,
+    return_values=["model_id"],
     repo = repo,
     repo_branch = repo_branch,
     working_dir = working_dir,
+    packages=["boto3==1.43.29", "ultralytics"],
     cache=False)
-def train_model(prepared_dataset_id: str, 
+def train_model(prepared_dataset_id: str,
     epochs,
     imgsz,
     optimizer,
@@ -53,7 +56,7 @@ def train_model(prepared_dataset_id: str,
     from my_clearml.train_model import main as train_main
 
     pt_model_id = train_main(
-        prepared_dataset_id, 
+        prepared_dataset_id,
         epochs,
         imgsz,
         optimizer,
@@ -67,14 +70,15 @@ def train_model(prepared_dataset_id: str,
         weights
     )
     return str(pt_model_id)
-    
+
 
 @PipelineDecorator.component(
-    execution_queue = cpu_queue, 
-    return_values=["onnx_file"], 
+    execution_queue = cpu_queue,
+    return_values=["onnx_file"],
     repo = repo,
     repo_branch = repo_branch,
     working_dir = working_dir,
+    packages=["boto3==1.43.29", "ultralytics"],
     cache=False)
 def export_model(output_model_id: str)-> str:
     from my_clearml.export_onnx import main as export_main
