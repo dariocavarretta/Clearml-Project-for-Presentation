@@ -6,4 +6,6 @@ clearml-serving
 yolov11n.pt
 yolov1126n.pt
 pipeline/__pycache__
+*__pycache__*
+
 dataset*
