@@ -36,7 +36,7 @@ if __name__ == "__main__":
         dataset_id="fd0284bf6a2c4ac38194ad0468b64751",
         val_ratio=0.2,
         epochs = 1,
-        imgsz=1024,
+        imgsz=640,
         optimizer = "SGD",
         lr0 = 0.01,
         mosaic = 1.0,
