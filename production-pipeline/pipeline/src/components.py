@@ -88,6 +88,24 @@ def export_model(output_model_id: str)-> str:
     return str(onnx_model_id)
 
 
+@PipelineDecorator.component(
+    execution_queue = cpu_queue,
+    return_values=["cleaned"],
+    repo = repo,
+    repo_branch = repo_branch,
+    working_dir = working_dir,
+    packages=["boto3==1.43.29"],
+    cache=False)
+def cleanup_dataset(prepared_dataset_id: str, model_id: str) -> bool:
+    # model_id is passed only to declare the dependency on train_model finishing first;
+    # its value is not used here.
+    from my_clearml.cleanup_dataset import main as cleanup_main
+
+    cleaned = cleanup_main(prepared_dataset_id)
+
+    return cleaned
+
+
 def execute_pipeline(
     dataset_id,
     val_ratio,
@@ -128,8 +146,14 @@ def execute_pipeline(
         weights=weights,
     )
 
+    # export and cleanup run in parallel — both depend only on train finishing
     onnx_model_id = export_model(
         output_model_id=model_id
+    )
+
+    cleanup_dataset(
+        prepared_dataset_id=prepared_dataset_id,
+        model_id=model_id,       # signals dependency on train_model
     )
 
     return onnx_model_id

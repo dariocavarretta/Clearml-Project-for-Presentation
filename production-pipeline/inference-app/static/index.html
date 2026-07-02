@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>YOLO Inference</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── IBM Bob banner ── */
+#bob-banner {
+  width:100%; background:#1a1d27; border-bottom:1px solid #2e3245;
+  padding:14px 28px; display:flex; align-items:center; justify-content:center;
+  gap:16px; position:sticky; top:0; z-index:100;
+}
+#bob-banner .bob-logo-slot {
+  width:52px; height:52px; border-radius:10px;
+  background:#2e3245; border:2px dashed #4f8ef7;
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden; flex-shrink:0;
+}
+#bob-banner .bob-logo-slot img {
+  width:100%; height:100%; object-fit:contain;
+}
+#bob-banner .bob-logo-slot .bob-placeholder {
+  font-size:14px; color:#4f8ef7; font-weight:700; letter-spacing:.04em;
+}
+#bob-banner .bob-text {
+  font-size:1rem; color:#8891a8; letter-spacing:.02em; line-height:1.4;
+}
+#bob-banner .bob-text b { color:#e8eaf0; font-weight:700; font-size:1.05rem; }
+#bob-banner .bob-text span { color:#4f8ef7; }
+
+:root {
+  --bg:      #0f1117; --surface: #1a1d27; --border: #2e3245;
+  --accent:  #4f8ef7; --accent2: #7c5cd8; --text:   #e8eaf0;
+  --muted:   #8891a8; --success: #34d399; --warn:   #fbbf24;
+  --danger:  #f87171; --radius:  12px;
+}
+body {
+  background: var(--bg); color: var(--text);
+  font-family: -apple-system,"Segoe UI",system-ui,sans-serif;
+  font-size:15px; line-height:1.6; min-height:100dvh;
+  display:flex; flex-direction:column; align-items:center;
+  padding:0 16px 60px;
+}
+
+/* ── login overlay ── */
+#login-overlay {
+  position:fixed; inset:0; background:var(--bg);
+  display:flex; align-items:center; justify-content:center;
+  z-index:999;
+}
+#login-box {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); padding:32px 28px; width:100%; max-width:340px;
+  text-align:center;
+}
+#login-box h2 { font-size:1.2rem; margin-bottom:6px; }
+#login-box p  { color:var(--muted); font-size:.88rem; margin-bottom:20px; }
+#login-box input[type=password] {
+  width:100%; padding:10px 14px;
+  background:var(--bg); border:1px solid var(--border);
+  border-radius:8px; color:var(--text); font-size:.95rem;
+  margin-bottom:12px; outline:none;
+}
+#login-box input[type=password]:focus { border-color:var(--accent); }
+#login-error { color:var(--danger); font-size:.82rem; margin-bottom:10px; min-height:18px; }
+
+/* ── general ── */
+header { width:100%; max-width:720px; margin-bottom:24px; text-align:center; }
+header h1 { font-size:1.6rem; font-weight:700; letter-spacing:-.5px; }
+header h1 span { color:var(--accent); }
+header p  { color:var(--muted); font-size:.9rem; margin-top:4px; }
+.header-row { display:flex; align-items:center; justify-content:space-between; }
+
+.card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); padding:20px;
+  width:100%; max-width:720px; margin-bottom:20px;
+}
+.card-title {
+  font-size:.78rem; font-weight:600; text-transform:uppercase;
+  letter-spacing:.08em; color:var(--muted); margin-bottom:14px;
+}
+
+/* ── drop zone ── */
+#drop-zone {
+  border:2px dashed var(--border); border-radius:var(--radius);
+  padding:36px 20px; text-align:center; cursor:pointer;
+  transition:border-color .2s,background .2s; position:relative;
+}
+#drop-zone:hover,#drop-zone.over { border-color:var(--accent); background:rgba(79,142,247,.05); }
+#drop-zone svg { display:block; margin:0 auto 12px; opacity:.5; }
+#drop-zone p   { color:var(--muted); font-size:.9rem; }
+#drop-zone p b { color:var(--accent); }
+#file-input    { display:none; }
+
+.btn-row { display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
+button {
+  flex:1 1 auto; padding:10px 18px; border:none; border-radius:8px;
+  font-size:.9rem; font-weight:600; cursor:pointer;
+  transition:opacity .15s,transform .1s;
+}
+button:active  { transform:scale(.97); }
+.btn-primary   { background:var(--accent);  color:#fff; }
+.btn-secondary { background:var(--surface); color:var(--text); border:1px solid var(--border); }
+.btn-camera    { background:var(--accent2); color:#fff; }
+.btn-danger    { background:rgba(248,113,113,.15); color:var(--danger); border:1px solid rgba(248,113,113,.3); }
+button:disabled { opacity:.4; cursor:not-allowed; }
+.btn-icon {
+  background:none; border:1px solid var(--border); color:var(--muted);
+  padding:4px 10px; font-size:.78rem; border-radius:6px; flex:0;
+}
+.btn-icon:hover { border-color:var(--accent); color:var(--accent); }
+.btn-icon.danger:hover { border-color:var(--danger); color:var(--danger); }
+
+/* ── settings ── */
+.settings-row { display:flex; gap:14px; flex-wrap:wrap; }
+.field { flex:1 1 140px; }
+.field label {
+  display:block; font-size:.78rem; font-weight:600;
+  color:var(--muted); margin-bottom:6px;
+  text-transform:uppercase; letter-spacing:.06em;
+}
+.field select,.field input[type=range] {
+  width:100%; background:var(--bg); border:1px solid var(--border);
+  border-radius:6px; color:var(--text); padding:7px 10px; font-size:.9rem;
+}
+.field input[type=range] {
+  -webkit-appearance:none; padding:0; height:6px;
+  border-radius:99px; accent-color:var(--accent); cursor:pointer;
+}
+.field .range-val { text-align:right; font-size:.82rem; color:var(--accent); margin-top:4px; }
+
+/* ── preview ── */
+#preview-wrap {
+  position:relative; display:none; width:100%;
+  border-radius:var(--radius); overflow:hidden; background:#000;
+}
+#preview-img { display:block; width:100%; height:auto; max-height:70vh; object-fit:contain; }
+#overlay-canvas { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+
+/* ── results ── */
+#results-card { display:none; }
+.result-item {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 14px; border-radius:8px; background:var(--bg);
+  margin-bottom:8px; border:1px solid var(--border);
+}
+.result-left { display:flex; align-items:center; gap:10px; }
+.result-dot  { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.result-class { font-weight:600; font-size:.9rem; }
+.result-box   { font-size:.75rem; color:var(--muted); }
+.result-conf  { font-size:.9rem; font-weight:700; font-variant-numeric:tabular-nums; }
+.meta-row {
+  display:flex; gap:16px; flex-wrap:wrap; margin-top:14px;
+  padding-top:12px; border-top:1px solid var(--border);
+}
+.meta-item { font-size:.8rem; color:var(--muted); }
+.meta-item b { color:var(--text); }
+
+/* ── feedback ── */
+#feedback-card { display:none; }
+.feedback-row  { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+.feedback-field { flex:1 1 100px; }
+.feedback-field label {
+  display:block; font-size:.78rem; font-weight:600; color:var(--muted);
+  margin-bottom:6px; text-transform:uppercase; letter-spacing:.06em;
+}
+.feedback-field input[type=number] {
+  width:100%; background:var(--bg); border:1px solid var(--border);
+  border-radius:6px; color:var(--text); padding:8px 10px; font-size:.9rem;
+}
+.feedback-field input[type=number]:focus { border-color:var(--accent); outline:none; }
+.feedback-sent { color:var(--success); font-size:.85rem; margin-top:8px; display:none; }
+
+/* ── status bar ── */
+#status {
+  display:none; width:100%; max-width:720px; padding:10px 16px;
+  border-radius:8px; font-size:.88rem; font-weight:500; margin-bottom:16px;
+}
+#status.info  { background:rgba(79,142,247,.12); color:var(--accent);  border:1px solid rgba(79,142,247,.25); }
+#status.error { background:rgba(239,68,68,.12);  color:var(--danger);  border:1px solid rgba(239,68,68,.25); }
+#status.ok    { background:rgba(52,211,153,.12); color:var(--success); border:1px solid rgba(52,211,153,.25); }
+.spinner {
+  display:inline-block; width:14px; height:14px; border:2px solid transparent;
+  border-top-color:currentColor; border-radius:50%;
+  animation:spin .7s linear infinite; vertical-align:middle; margin-right:6px;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+.no-det { text-align:center; padding:20px; color:var(--muted); font-size:.9rem; }
+
+/* ── history ── */
+.history-header {
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;
+}
+.history-header .card-title { margin-bottom:0; }
+.history-actions { display:flex; gap:8px; }
+.history-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+@media(max-width:500px){ .history-grid { grid-template-columns:repeat(3,1fr); } }
+.history-thumb {
+  position:relative; aspect-ratio:1; border-radius:6px; overflow:hidden;
+  cursor:pointer; border:2px solid transparent; transition:border-color .15s;
+  background:var(--bg);
+}
+.history-thumb:hover   { border-color:var(--accent); }
+.history-thumb.active  { border-color:var(--success); }
+.history-thumb.has-feedback { border-color:var(--warn); }
+.history-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+.thumb-badge {
+  position:absolute; bottom:4px; right:4px; background:rgba(0,0,0,.65);
+  color:#fff; font-size:.7rem; font-weight:700; padding:1px 5px;
+  border-radius:99px; line-height:1.4; pointer-events:none;
+}
+.history-empty { color:var(--muted); font-size:.85rem; padding:10px 0; }
+
+/* ── stats chart ── */
+#stats-card { }
+.chart-wrap { overflow-x:auto; padding-bottom:4px; }
+.chart-svg  { display:block; }
+.chart-legend { display:flex; gap:16px; margin-top:10px; flex-wrap:wrap; }
+.legend-item { display:flex; align-items:center; gap:6px; font-size:.8rem; color:var(--muted); }
+.legend-dot  { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<div id="bob-banner">
+  <div class="bob-logo-slot" id="bob-logo-slot">
+         <img src="/static/bob-icon.png" alt="IBM Bob" />
+  </div>
+  <div class="bob-text">
+    Made in collaboration with <b>IBM <span>Bob</span></b>
+  </div>
+</div>
+
+<!-- ── Login overlay ── -->
+<div id="login-overlay">
+  <div id="login-box">
+    <h2>YOLO <span style="color:var(--accent)">Inference</span></h2>
+    <p>Enter the access password to continue</p>
+    <div id="login-error"></div>
+    <input type="password" id="pw-input" placeholder="Password" autocomplete="current-password" />
+    <button class="btn-primary" id="login-btn" style="width:100%">Sign in</button>
+  </div>
+</div>
+
+<!-- ── Main app (hidden until logged in) ── -->
+<div id="app" style="display:none; width:100%; display:none; flex-direction:column; align-items:center; padding-top:24px;">
+
+<header style="width:100%;max-width:720px;margin-bottom:24px;">
+  <div class="header-row">
+    <div style="text-align:left">
+      <h1>YOLO <span>Inference</span></h1>
+      <p>Upload or capture an image — get object detections instantly</p>
+    </div>
+    <button class="btn-icon" id="logout-btn" style="flex:0;white-space:nowrap">Sign out</button>
+  </div>
+</header>
+
+<div id="status"></div>
+
+<!-- Image input -->
+<div class="card">
+  <div class="card-title">Image Input</div>
+  <div id="drop-zone" role="button" tabindex="0" aria-label="Upload image">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+    <p><b>Click to browse</b> or drag &amp; drop</p>
+    <p style="margin-top:4px">Supports JPG · PNG · WebP · HEIC</p>
+    <input id="file-input" type="file" accept="image/*" />
+  </div>
+  <div class="btn-row">
+    <button class="btn-camera" id="camera-btn">📷 Take Photo</button>
+    <button class="btn-primary" id="run-btn" disabled>Run Detection</button>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="card">
+  <div class="card-title">Settings</div>
+  <div class="settings-row">
+    <div class="field">
+      <label>Model</label>
+      <select id="model-select"><option value="">Loading…</option></select>
+    </div>
+    <div class="field">
+      <label>Confidence threshold</label>
+      <input type="range" id="conf-range" min="0.05" max="0.95" step="0.05" value="0.25" />
+      <div class="range-val" id="conf-val">0.5</div>
+    </div>
+    <div class="field">
+      <label>IoU threshold</label>
+      <input type="range" id="iou-range" min="0.1" max="0.9" step="0.05" value="0.45" />
+      <div class="range-val" id="iou-val">0.45</div>
+    </div>
+  </div>
+</div>
+
+<!-- Preview -->
+<div class="card" id="preview-card" style="display:none;padding:0;overflow:hidden;">
+  <div id="preview-wrap">
+    <img id="preview-img" alt="Preview" />
+    <canvas id="overlay-canvas"></canvas>
+  </div>
+</div>
+
+<!-- Results -->
+<div class="card" id="results-card">
+  <div class="card-title">Detections</div>
+  <div id="results-list"></div>
+  <div class="meta-row" id="meta-row"></div>
+</div>
+
+<!-- Feedback -->
+<div class="card" id="feedback-card">
+  <div class="card-title">Human-in-the-Loop Feedback</div>
+  <p style="font-size:.85rem;color:var(--muted);margin-bottom:14px">
+    Were there errors in the detection? Report false positives (extra boxes) or false negatives (missed objects).
+  </p>
+  <div class="feedback-row">
+    <div class="feedback-field">
+      <label>False Positives (extra detections)</label>
+      <input type="number" id="fp-input" min="0" value="0" placeholder="0" />
+    </div>
+    <div class="feedback-field">
+      <label>False Negatives (missed objects)</label>
+      <input type="number" id="fn-input" min="0" value="0" placeholder="0" />
+    </div>
+    <div class="feedback-field" style="flex:0 1 auto">
+      <button class="btn-primary" id="submit-feedback-btn">Submit Feedback</button>
+    </div>
+  </div>
+  <div class="feedback-sent" id="feedback-sent">✓ Feedback recorded — thank you!</div>
+</div>
+
+<!-- History -->
+<div class="card" id="history-card">
+  <div class="history-header">
+    <div class="card-title">Recent Images</div>
+    <div class="history-actions">
+      <button class="btn-icon" id="refresh-history-btn">↻ Refresh</button>
+      <button class="btn-icon danger" id="clear-history-btn">🗑 Clear</button>
+    </div>
+  </div>
+  <div class="history-grid" id="history-grid">
+    <div class="history-empty">No images yet — run a detection first.</div>
+  </div>
+</div>
+
+<!-- Stats chart -->
+<div class="card" id="stats-card">
+  <div class="card-title">Daily Activity</div>
+  <div class="chart-wrap" id="chart-wrap">
+    <p style="color:var(--muted);font-size:.85rem">No data yet.</p>
+  </div>
+  <div class="chart-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#4f8ef7"></div>Predictions</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f87171"></div>False Positives</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div>False Negatives</div>
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<!-- hidden camera input -->
+<input id="camera-input" type="file" accept="image/*" capture="environment" style="display:none" />
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// Palette
+// ─────────────────────────────────────────────────────────────────────────────
+const PALETTE = ["#4f8ef7","#7c5cd8","#34d399","#fbbf24","#f87171",
+                 "#60a5fa","#a78bfa","#6ee7b7","#fcd34d","#fca5a5"];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Auth
+// ─────────────────────────────────────────────────────────────────────────────
+const loginOverlay = document.getElementById("login-overlay");
+const app          = document.getElementById("app");
+const pwInput      = document.getElementById("pw-input");
+const loginBtn     = document.getElementById("login-btn");
+const loginError   = document.getElementById("login-error");
+const logoutBtn    = document.getElementById("logout-btn");
+
+async function tryLogin() {
+  const pw = pwInput.value;
+  if (!pw) return;
+  loginBtn.disabled = true;
+  try {
+    const res = await fetch("/login", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ password: pw })
+    });
+    if (res.ok) {
+      loginOverlay.style.display = "none";
+      app.style.display = "flex";
+      onAppReady();
+    } else {
+      loginError.textContent = "Wrong password — try again.";
+    }
+  } catch {
+    loginError.textContent = "Network error.";
+  } finally {
+    loginBtn.disabled = false;
+  }
+}
+loginBtn.addEventListener("click", tryLogin);
+pwInput.addEventListener("keydown", e => { if (e.key === "Enter") tryLogin(); });
+
+logoutBtn.addEventListener("click", async () => {
+  await fetch("/logout", { method:"POST" });
+  location.reload();
+});
+
+// Check if already logged in by pinging an auth-gated endpoint
+async function checkSession() {
+  const res = await fetch("/models");
+  if (res.ok) {
+    loginOverlay.style.display = "none";
+    app.style.display = "flex";
+    onAppReady();
+  }
+}
+checkSession();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// App state
+// ─────────────────────────────────────────────────────────────────────────────
+let currentFile = null;
+let currentObjectURL = null;
+let currentStem = "";   // timestamp key for the last prediction
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DOM refs
+// ─────────────────────────────────────────────────────────────────────────────
+const dropZone      = document.getElementById("drop-zone");
+const fileInput     = document.getElementById("file-input");
+const cameraBtn     = document.getElementById("camera-btn");
+const cameraInput   = document.getElementById("camera-input");
+const runBtn        = document.getElementById("run-btn");
+const modelSel      = document.getElementById("model-select");
+const confRange     = document.getElementById("conf-range");
+const iouRange      = document.getElementById("iou-range");
+const confVal       = document.getElementById("conf-val");
+const iouVal        = document.getElementById("iou-val");
+const previewCard   = document.getElementById("preview-card");
+const previewWrap   = document.getElementById("preview-wrap");
+const previewImg    = document.getElementById("preview-img");
+const overlayCanvas = document.getElementById("overlay-canvas");
+const resultsList   = document.getElementById("results-list");
+const resultsCard   = document.getElementById("results-card");
+const metaRow       = document.getElementById("meta-row");
+const statusBar     = document.getElementById("status");
+const feedbackCard  = document.getElementById("feedback-card");
+const fpInput       = document.getElementById("fp-input");
+const fnInput       = document.getElementById("fn-input");
+const submitFbBtn   = document.getElementById("submit-feedback-btn");
+const feedbackSent  = document.getElementById("feedback-sent");
+const historyGrid   = document.getElementById("history-grid");
+const refreshBtn    = document.getElementById("refresh-history-btn");
+const clearBtn      = document.getElementById("clear-history-btn");
+const chartWrap     = document.getElementById("chart-wrap");
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+function setStatus(msg, type="info") {
+  statusBar.innerHTML = type === "info" ? `<span class="spinner"></span>${msg}` : msg;
+  statusBar.className = type;
+  statusBar.style.display = "block";
+}
+function clearStatus() { statusBar.style.display = "none"; }
+function confColor(c) {
+  return c >= 0.7 ? "#34d399" : c >= 0.4 ? "#fbbf24" : "#f87171";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Init (called after login)
+// ─────────────────────────────────────────────────────────────────────────────
+function onAppReady() {
+  loadModels();
+  loadHistory();
+  loadStats();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Models
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadModels() {
+  try {
+    const data = await fetch("/models").then(r => r.json());
+    modelSel.innerHTML = data.models.length
+      ? data.models.map(m => `<option value="${m}">${m}</option>`).join("")
+      : '<option value="">No models found</option>';
+  } catch {
+    modelSel.innerHTML = '<option value="">Could not load models</option>';
+  }
+}
+confRange.addEventListener("input", () => confVal.textContent = confRange.value);
+iouRange.addEventListener("input",  () => iouVal.textContent  = iouRange.value);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// File selection
+// ─────────────────────────────────────────────────────────────────────────────
+function setFile(file) {
+  if (!file) return;
+  currentFile = file;
+  if (currentObjectURL) URL.revokeObjectURL(currentObjectURL);
+  currentObjectURL = URL.createObjectURL(file);
+  previewImg.src = currentObjectURL;
+  previewCard.style.display = "block";
+  previewWrap.style.display = "block";
+  resultsCard.style.display = "none";
+  feedbackCard.style.display = "none";
+  resultsList.innerHTML = "";
+  metaRow.innerHTML = "";
+  overlayCanvas.getContext("2d").clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  runBtn.disabled = false;
+  currentStem = "";
+  clearStatus();
+}
+dropZone.addEventListener("click",   () => fileInput.click());
+dropZone.addEventListener("keydown", e => { if (e.key==="Enter"||e.key===" ") fileInput.click(); });
+fileInput.addEventListener("change", () => { if (fileInput.files[0]) setFile(fileInput.files[0]); });
+dropZone.addEventListener("dragover",  e => { e.preventDefault(); dropZone.classList.add("over"); });
+dropZone.addEventListener("dragleave", () => dropZone.classList.remove("over"));
+dropZone.addEventListener("drop", e => {
+  e.preventDefault(); dropZone.classList.remove("over");
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith("image/")) setFile(f);
+  else setStatus("Please drop an image file.", "error");
+});
+cameraBtn.addEventListener("click",  () => cameraInput.click());
+cameraInput.addEventListener("change", () => { if (cameraInput.files[0]) setFile(cameraInput.files[0]); });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Inference
+// ─────────────────────────────────────────────────────────────────────────────
+runBtn.addEventListener("click", async () => {
+  if (!currentFile) return;
+  runBtn.disabled = true;
+  setStatus("Running inference…");
+  const fd = new FormData();
+  fd.append("file", currentFile);
+  const params = new URLSearchParams({ conf: confRange.value, iou: iouRange.value });
+  if (modelSel.value) params.set("model", modelSel.value);
+  try {
+    const res = await fetch(`/predict?${params}`, { method:"POST", body:fd });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || res.statusText);
+    }
+    const data = await res.json();
+    currentStem = data.stem || "";
+    renderResults(data);
+    showFeedback();
+    clearStatus();
+    loadHistory();
+    loadStats();
+  } catch(e) {
+    setStatus(`Error: ${e.message}`, "error");
+  } finally {
+    runBtn.disabled = false;
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render results
+// ─────────────────────────────────────────────────────────────────────────────
+function renderResults(data) {
+  const { predictions, image_width, image_height, model, inference_ms } = data;
+  const img = previewImg;
+  function drawBoxes() {
+    const dw = img.clientWidth, dh = img.clientHeight;
+    overlayCanvas.width = dw; overlayCanvas.height = dh;
+    const sx = dw / image_width, sy = dh / image_height;
+    const ctx = overlayCanvas.getContext("2d");
+    ctx.clearRect(0, 0, dw, dh);
+    predictions.forEach(p => {
+      const color = PALETTE[p.class_id % PALETTE.length];
+      const { x1, y1, x2, y2 } = p.box;
+      ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+      ctx.strokeRect(x1*sx, y1*sy, (x2-x1)*sx, (y2-y1)*sy);
+      const label = `${p.class_name} ${(p.confidence*100).toFixed(0)}%`;
+      ctx.font = "bold 12px system-ui,sans-serif";
+      const tw = ctx.measureText(label).width;
+      const lh = 18, pad = 4;
+      const lx = x1*sx, ly = y1*sy > lh+4 ? y1*sy-lh-2 : y1*sy+2;
+      ctx.fillStyle = color;
+      ctx.fillRect(lx, ly, tw+pad*2, lh);
+      ctx.fillStyle = "#fff";
+      ctx.fillText(label, lx+pad, ly+lh-4);
+    });
+  }
+  if (img.complete && img.naturalWidth > 0) drawBoxes(); else img.onload = drawBoxes;
+
+  resultsCard.style.display = "block";
+  if (predictions.length === 0) {
+    resultsList.innerHTML = `<div class="no-det">No objects detected above threshold</div>`;
+    metaRow.innerHTML = "";
+  } else {
+    resultsList.innerHTML = predictions.map(p => {
+      const color = PALETTE[p.class_id % PALETTE.length];
+      const conf  = (p.confidence*100).toFixed(1);
+      const { x1, y1, x2, y2 } = p.box;
+      return `<div class="result-item">
+        <div class="result-left">
+          <div class="result-dot" style="background:${color}"></div>
+          <div>
+            <div class="result-class">${p.class_name}</div>
+            <div class="result-box">${x1},${y1} → ${x2},${y2}</div>
+          </div>
+        </div>
+        <div class="result-conf" style="color:${confColor(p.confidence)}">${conf}%</div>
+      </div>`;
+    }).join("");
+    metaRow.innerHTML = `
+      <div class="meta-item">Detections: <b>${predictions.length}</b></div>
+      <div class="meta-item">Model: <b>${model}</b></div>
+      <div class="meta-item">Inference: <b>${inference_ms} ms</b></div>
+      <div class="meta-item">Resolution: <b>${image_width}×${image_height}</b></div>`;
+  }
+  resultsCard.scrollIntoView({ behavior:"smooth", block:"start" });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Feedback
+// ─────────────────────────────────────────────────────────────────────────────
+function showFeedback() {
+  fpInput.value = "0"; fnInput.value = "0";
+  feedbackSent.style.display = "none";
+  feedbackCard.style.display = "block";
+}
+
+submitFbBtn.addEventListener("click", async () => {
+  const fp = Math.max(0, parseInt(fpInput.value) || 0);
+  const fn = Math.max(0, parseInt(fnInput.value) || 0);
+  submitFbBtn.disabled = true;
+  try {
+    await fetch("/feedback", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ stem: currentStem, fp, fn })
+    });
+    feedbackSent.style.display = "block";
+    // refresh stats chart after feedback
+    loadStats();
+  } catch(e) {
+    setStatus("Could not submit feedback.", "error");
+  } finally {
+    submitFbBtn.disabled = false;
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// History
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadHistory() {
+  try {
+    const data = await fetch("/history").then(r => r.json());
+    if (!data.entries || data.entries.length === 0) {
+      historyGrid.innerHTML = '<div class="history-empty">No images yet — run a detection first.</div>';
+      return;
+    }
+    historyGrid.innerHTML = data.entries.map(({ image, meta }) => {
+      const det   = meta.detections ?? "?";
+      const conf  = meta.conf  != null ? (meta.conf*100).toFixed(0)+"%" : "—";
+      const iou   = meta.iou   != null ? (meta.iou*100).toFixed(0)+"%"  : "—";
+      const model = meta.model ?? "—";
+      const ms    = meta.inference_ms != null ? meta.inference_ms+" ms" : "—";
+      const hasFb = meta.feedback != null;
+      const fbTip = hasFb ? ` | FP:${meta.feedback.fp} FN:${meta.feedback.fn}` : "";
+      const tip   = `${det} det · conf ${conf} · IoU ${iou} · ${model} · ${ms}${fbTip}`;
+      return `<div class="history-thumb${hasFb?" has-feedback":""}" data-name="${image}" title="${tip}">
+        <img src="/history/${encodeURIComponent(image)}" alt="${tip}" loading="lazy" />
+        <div class="thumb-badge">${det}</div>
+      </div>`;
+    }).join("");
+    historyGrid.querySelectorAll(".history-thumb").forEach(thumb => {
+      thumb.addEventListener("click", async () => {
+        const blob = await fetch(`/history/${encodeURIComponent(thumb.dataset.name)}`).then(r => r.blob());
+        const file = new File([blob], thumb.dataset.name, { type: blob.type });
+        historyGrid.querySelectorAll(".history-thumb").forEach(t => t.classList.remove("active"));
+        thumb.classList.add("active");
+        setFile(file);
+        window.scrollTo({ top:0, behavior:"smooth" });
+      });
+    });
+  } catch {
+    historyGrid.innerHTML = '<div class="history-empty">Could not load history.</div>';
+  }
+}
+
+refreshBtn.addEventListener("click", loadHistory);
+
+clearBtn.addEventListener("click", async () => {
+  if (!confirm("Delete all history images? This cannot be undone.")) return;
+  try {
+    await fetch("/history", { method:"DELETE" });
+    await loadHistory();
+  } catch {
+    setStatus("Could not clear history.", "error");
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Stats chart (pure SVG, no external lib)
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const data = await fetch("/stats").then(r => r.json());
+    const days = data.days || [];
+    if (days.length === 0) {
+      chartWrap.innerHTML = '<p style="color:var(--muted);font-size:.85rem">No data yet.</p>';
+      return;
+    }
+    renderChart(days);
+  } catch {
+    chartWrap.innerHTML = '<p style="color:var(--muted);font-size:.85rem">Could not load stats.</p>';
+  }
+}
+
+function renderChart(days) {
+  const W = Math.max(days.length * 52, 300);
+  const H = 160;
+  const padL = 36, padB = 40, padT = 12, padR = 12;
+  const cW = W - padL - padR;
+  const cH = H - padT - padB;
+  const maxVal = Math.max(...days.map(d => Math.max(d.predictions, d.fp + d.fn, 1)));
+  const barW = 14, gap = (cW / days.length) - barW * 3 - 2;
+
+  const yScale = v => padT + cH - (v / maxVal) * cH;
+  const xBase  = (i) => padL + i * (cW / days.length) + gap / 2;
+
+  // y-axis gridlines
+  let gridLines = "";
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + (cH / 4) * i;
+    const val = Math.round(maxVal - (maxVal / 4) * i);
+    gridLines += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#2e3245" stroke-width="1"/>`;
+    gridLines += `<text x="${padL - 4}" y="${y + 4}" text-anchor="end" fill="#8891a8" font-size="10">${val}</text>`;
+  }
+
+  // bars
+  let bars = "";
+  days.forEach((d, i) => {
+    const x = xBase(i);
+    const hPred = (d.predictions / maxVal) * cH || 0;
+    const hFP   = (d.fp / maxVal) * cH || 0;
+    const hFN   = (d.fn / maxVal) * cH || 0;
+    bars += `<rect x="${x}"          y="${yScale(d.predictions)}" width="${barW}" height="${hPred}" fill="#4f8ef7" rx="2"/>`;
+    bars += `<rect x="${x + barW + 1}" y="${yScale(d.fp)}"          width="${barW}" height="${hFP}"   fill="#f87171" rx="2"/>`;
+    bars += `<rect x="${x + barW*2+2}" y="${yScale(d.fn)}"          width="${barW}" height="${hFN}"   fill="#fbbf24" rx="2"/>`;
+    // x label: show last 5 chars of date (MM-DD)
+    const label = d.date.slice(5);
+    bars += `<text x="${x + barW}" y="${H - padB + 14}" text-anchor="middle" fill="#8891a8" font-size="10">${label}</text>`;
+  });
+
+  chartWrap.innerHTML = `
+    <svg class="chart-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+      ${gridLines}
+      ${bars}
+      <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + cH}" stroke="#2e3245" stroke-width="1"/>
+    </svg>`;
+}
+</script>
+</body>
+</html>

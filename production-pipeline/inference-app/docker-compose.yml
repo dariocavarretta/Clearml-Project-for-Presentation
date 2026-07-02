@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  inference:
+    build: .
+    image: yolo-inference:latest
+    container_name: yolo-inference
+    ports:
+      - "8000:8000"
+    volumes:
+      # Drop your .onnx / .engine models here — they are auto-detected
+      - ./models:/app/models
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
